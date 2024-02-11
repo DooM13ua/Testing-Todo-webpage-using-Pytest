@@ -1,3 +1,4 @@
+import time
 import pytest
 from playwright.sync_api import Page, expect, sync_playwright
 from modules_todo.todo_modules import ToDo
@@ -133,26 +134,62 @@ def test_edit_by_enter(page):
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
     todo.edit_by_enter("Task 1", "Task 1 Updated")
-
+    page.wait_for_timeout(2000)
     assert todo.get_active_task()[0] == "Task 1 Updated"
 
-# def test_edit_by_tab():
-# def test_edit_by_click_outside():
-# def test_edit_by_cancel_edit_by_esc():
-# def test_delete_by_edit():
-# def test_active_add():
-# def test_active_edit_all_all_edit():
-# def test_active_complete_one():
-# def test_active_all():
-# def test_activate_all():
-# def test_active_delete_one_x():
-# def test_active_delete_one_edit():
-# def test_active_delete_clear_completed():
-# def test_completed_add():
-# def test_completed_edit_all_all_edit():
-# def test_completed_complete_all():
-# def test_completed_activate_one():
-# def test_completed_activate_all():
-# def test_completed_delete_by_x():
-# def test_completed_delete_edit():
-# def test_completed_delete_clear_completed():
+
+def test_delete_by_edit(page):
+    """Delete task by editing field to ' '."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.delete_task_by_edit("Task 1")
+
+    assert not page.query_selector(".todo-list")
+
+    
+# def test_filter_all(page):
+# def test_filter_active(page):
+# def test_filter_complete(page):
+
+def test_clear_competed(page):
+    """Delete completed tasks by 'clear completed'"""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.check_all_completed()
+    assert todo.get_tasks_left() == 0
+    todo.clear_completed()
+
+    assert not page.query_selector(".todo-list")
+
+
+def test_delete_completed_edit(page):
+    """Delete completed task by editing to ' '."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.check_task("Task 1")
+    page.get_by_role("link", name="Completed").click()
+    todo.delete_task_by_edit("Task 1")
+
+    assert not page.query_selector(".todo-list")
+
+
+def test_delete_completed_button(page):
+    """Delete completed task by 'x' button."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.check_task("Task 1")
+    page.get_by_role("link", name="Completed").click()
+    todo.delete_task()
+    time.sleep(3)
+
+    assert not page.query_selector(".todo-list")
+
+# def test_clear_active(page)
+# def test_delete_active_edit(page):
+# def test_delete_active_button(page):

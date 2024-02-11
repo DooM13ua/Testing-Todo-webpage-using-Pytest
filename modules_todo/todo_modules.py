@@ -11,27 +11,31 @@ class ToDo:
         self.page.get_by_placeholder("What needs to be done?").press("Enter")
 
     def edit_by_enter(self, old_name, new_name):
-        self.page.dblclick(f"//label[contains(text(), '{old_name}')]")
-        self.page.click(".edit")
-        self.page.keyboard.press("Control+A")
-        self.page.keyboard.type(new_name)
-        self.page.keyboard.press("Enter")
-
-    def update_task(self, old_name, new_name):
-        selector = f"//label[contains(text(), '{old_name}')]"
-        self.page.click(selector)
-        self.page.dblclick(selector)
+        self.page.dblclick(f"//label[text()='{old_name}']")
+        for i in range(3):
+            self.page.click(".edit")
         self.page.keyboard.press("Control+A")
         self.page.keyboard.type(new_name)
         self.page.keyboard.press("Enter")
 
     def check_task(self, task_name):
-        task = f"//label[contains(text(), '{task_name}')]"
-        self.page.check(task + "/preceding-sibling::input[@type='checkbox']")
+        checkbox_selector = (
+            "//input[@class='toggle' and "
+            f"following-sibling::label[contains(text(), \"{task_name}\")]]"
+        )
+        self.page.check(checkbox_selector)
 
     def uncheck_task(self, task_name):
         task = f"//label[contains(text(), '{task_name}')]"
         self.page.uncheck(task + "/preceding-sibling::input[@type='checkbox']")
+
+    def check_all_completed(self):
+        # Make all tasks completed.
+        self.page.check("//input[@id='toggle-all']")
+
+    def uncheck_all_completed(self):
+        # Make all tasks active.
+        self.page.uncheck("//input[@id='toggle-all']")
 
     def delete_task(self):
         self.page.evaluate('''() => {
@@ -39,6 +43,13 @@ class ToDo:
             button.style.display = 'block'; 
         }''')
         self.page.click('.destroy')
+
+    def delete_task_by_edit(self, task_name):
+        self.page.dblclick(f"//label[contains(text(), '{task_name}')]")
+        self.page.click(".edit")
+        self.page.keyboard.press("Control+A")
+        self.page.keyboard.press("Backspace")
+        self.page.keyboard.press("Enter")
 
     def clear_completed(self):
         self.page.query_selector(".clear-completed").click()
@@ -54,9 +65,3 @@ class ToDo:
 
     def get_tasks_left(self):
         return int(self.page.inner_text(".todo-count strong"))
-
-    def check_all_completed(self):
-        self.page.check("//input[@id='toggle-all']")
-
-    def uncheck_all_completed(self):
-        self.page.uncheck("//input[@id='toggle-all']")
