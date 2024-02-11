@@ -1,6 +1,6 @@
 import time
 import pytest
-from playwright.sync_api import Page, expect, sync_playwright
+from playwright.sync_api import sync_playwright
 from modules_todo.todo_modules import ToDo
 
 
@@ -54,6 +54,7 @@ def test_complete_one(page):
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
     todo.check_task("Task 1")
+    todo.add_task("Task 2")
 
     completed_tasks = todo.get_completed_tasks()
     assert "Task 1" in completed_tasks
@@ -108,9 +109,12 @@ def test_delete_task(page):
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
-    todo.delete_task()
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.delete_task("Task 1")
 
-    assert not page.query_selector('.main')
+    assert todo.get_active_task() == ["Task 2", "Task 3"]
+    assert not todo.get_all_task() == ["Task 1"]
 
 
 def test_delete_clear_completed(page):
@@ -126,6 +130,7 @@ def test_delete_clear_completed(page):
 
     assert todo.get_completed_tasks() == []
     assert todo.get_tasks_left() == 1
+    assert todo.get_all_task() == ["Task not completed"]
 
 
 def test_edit_by_enter(page):
@@ -133,9 +138,10 @@ def test_edit_by_enter(page):
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
+    todo.add_task("Task 2")
     todo.edit_by_enter("Task 1", "Task 1 Updated")
-    page.wait_for_timeout(2000)
-    assert todo.get_active_task()[0] == "Task 1 Updated"
+
+    assert todo.get_active_task() == ["Task 1 Updated", "Task 2"]
 
 
 def test_delete_by_edit(page):
@@ -143,14 +149,64 @@ def test_delete_by_edit(page):
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
-    todo.delete_task_by_edit("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.delete_task_by_edit("Task 2")
 
-    assert not page.query_selector(".todo-list")
+    assert todo.get_all_task() == ["Task 1", "Task 3"]
+    assert not todo.get_all_task() == ["Task 2"]
 
     
-# def test_filter_all(page):
-# def test_filter_active(page):
-# def test_filter_complete(page):
+def test_filter_all(page):
+    """Check filter 'all' button"""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.add_task("Task 4")
+    todo.add_task("Task 5")
+    todo.check_task("Task 5")
+    todo.filter_complete()
+    todo.filter_all()
+
+    assert todo.get_all_task() == ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]
+    assert todo.get_tasks_left() == 4
+    assert todo.get_completed_tasks() == ["Task 5"]
+    assert todo.get_active_task() == ["Task 1", "Task 2", "Task 3", "Task 4"]
+
+
+def test_filter_active(page):
+    """Check filter 'active' button"""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.add_task("Task 4")
+    todo.add_task("Task 5")
+    todo.check_task("Task 5")
+    todo.filter_active()
+
+    assert todo.get_active_task() == ["Task 1", "Task 2", "Task 3", "Task 4"]
+    assert todo.get_tasks_left() == 4
+
+
+def test_filter_complete(page):
+    """Check filter 'complete' button"""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.add_task("Task 4")
+    todo.add_task("Task 5")
+    todo.check_task("Task 5")
+    todo.filter_complete()
+
+    assert todo.get_tasks_left() == 4
+    assert todo.get_completed_tasks() == ["Task 5"]
+
 
 def test_clear_competed(page):
     """Delete completed tasks by 'clear completed'"""
@@ -171,11 +227,12 @@ def test_delete_completed_edit(page):
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
+    todo.add_task("Task 2")
     todo.check_task("Task 1")
-    page.get_by_role("link", name="Completed").click()
+    todo.filter_complete()
     todo.delete_task_by_edit("Task 1")
 
-    assert not page.query_selector(".todo-list")
+    assert todo.get_completed_tasks() == []
 
 
 def test_delete_completed_button(page):
@@ -184,12 +241,41 @@ def test_delete_completed_button(page):
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
     todo.check_task("Task 1")
-    page.get_by_role("link", name="Completed").click()
-    todo.delete_task()
+    todo.filter_complete()
+    todo.delete_task("Task 1")
     time.sleep(3)
 
     assert not page.query_selector(".todo-list")
 
-# def test_clear_active(page)
-# def test_delete_active_edit(page):
-# def test_delete_active_button(page):
+
+def test_edit_by_tab(page):
+    """Edit task by pressing 'Tab' in the end."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.edit_by_tab("Task 2", "Task 2 update")
+
+    assert todo.get_active_task() == ["Task 1", "Task 2 update"]
+
+
+def test_edit_by_click(page):
+    """Edit task by clicking outside in the end."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.edit_by_click("Task 2", "Task 2 update")
+
+    assert todo.get_active_task() == ["Task 1", "Task 2 update"]
+
+
+def test_edit_by_esc(page):
+    """Cancel task editing by pressing 'ESC' in the end."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.edit_by_esc("Task 2", "Task 2 update")
+
+    assert todo.get_active_task() == ["Task 1", "Task 2"]
