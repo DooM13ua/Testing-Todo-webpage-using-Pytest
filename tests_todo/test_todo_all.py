@@ -16,6 +16,7 @@ def test_logo_check(page):
     """Check header."""
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+
     assert page.locator("h1").text_content() == "todos"
 
 
@@ -23,6 +24,7 @@ def test_todo_field(page):
     """Check whether there is an input field."""
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+
     assert page.locator("input.new-todo").is_visible()
 
 
@@ -30,6 +32,7 @@ def test_todo_text(page):
     """Check if there is right text in active field 'What needs to be done?'."""
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+
     assert page.locator("input.new-todo").get_attribute("placeholder") == "What needs to be done?"
 
 
@@ -100,13 +103,28 @@ def test_activate_all(page):
 
 
 def test_delete_task(page):
-    """Delete a task."""
+    """Delete task using 'x' button."""
     todo = ToDo(page)
     todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
     todo.add_task("Task 1")
     todo.delete_task()
 
-# def test_delete_clear_completed():
+    assert not page.query_selector('.main')
+
+
+def test_delete_clear_completed(page):
+    """Clear completed tasks."""
+    todo = ToDo(page)
+    todo.visit("https://todomvc.com/examples/emberjs/todomvc/dist/")
+    todo.add_task("Task 1")
+    todo.add_task("Task 2")
+    todo.add_task("Task 3")
+    todo.check_all_completed()
+    todo.add_task("Task not completed")
+    todo.clear_completed()
+
+    assert todo.get_completed_tasks() == []
+    assert todo.get_tasks_left() == 1
 
 
 def test_edit_by_enter(page):
@@ -117,6 +135,7 @@ def test_edit_by_enter(page):
     todo.edit_by_enter("Task 1", "Task 1 Updated")
 
     assert todo.get_active_task()[0] == "Task 1 Updated"
+
 # def test_edit_by_tab():
 # def test_edit_by_click_outside():
 # def test_edit_by_cancel_edit_by_esc():

@@ -16,9 +16,6 @@ class ToDo:
         self.page.keyboard.press("Control+A")
         self.page.keyboard.type(new_name)
         self.page.keyboard.press("Enter")
-    # def edit_by_tab(self, old_name, new_name):
-    # def edit_by_click_outside(self, old_name, new_name):
-    # def edit_by_cancel_edit_by_esc(self, old_name, new_name):
 
     def update_task(self, old_name, new_name):
         selector = f"//label[contains(text(), '{old_name}')]"
@@ -37,7 +34,14 @@ class ToDo:
         self.page.uncheck(task + "/preceding-sibling::input[@type='checkbox']")
 
     def delete_task(self):
-        self.page.query_selector(".destroy").click()
+        self.page.evaluate('''() => {
+            const button = document.querySelector('.destroy');
+            button.style.display = 'block'; 
+        }''')
+        self.page.click('.destroy')
+
+    def clear_completed(self):
+        self.page.query_selector(".clear-completed").click()
 
     def get_completed_tasks(self):
         completed_tasks = self.page.query_selector_all('.completed .view label')
